@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>聊天室</title>
+    <link rel="stylesheet" href="../css/main.css" />
+    <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/5.2.3/css/bootstrap.min.css" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+</head>
+<body class="min-vh-100 d-flex justify-content-center align-items-center">
+<div class="row shadow bg-white w-75 border" style="min-height: 80vh">
+    <!-- menu -->
+    <div class="col-sm-2 p-0" style="background-color: #2e3641">
+        <!-- LOGO-->
+        <div class="text-center fs-1 fw-bold text-warning">LOGO</div>
+        <div class="border-primary border-bottom border-opacity-25 border-3 mb-1"></div>
+
+        <!-- 在线人数 -->
+        <div class="mb-1 text-center text-white">在线人数: <span id="online" class="fw-bold text-danger">0</span></div>
+        <div class="border-info border-bottom border-opacity-25 border-3 mb-1"></div>
+
+        <!-- 用户列表 -->
+        <div id="userList" class="p-3 overflow-auto">
+        </div>
+    </div>
+
+    <!-- body -->
+    <div class="col-sm-10 border border-2 border-success border-start-0 p-0">
+        <!-- title -->
+        <div class="text-center fs-4 fw-bold bg-success text-white">
+            <span id="title">聊天室</span> <span class="opacity-75 fs-5">v1.0</span>
+        </div>
+        <div class="border-success border-bottom"></div>
+
+        <!-- response -->
+        <div id="response">
+            <div id="responseContent" class="p-2 d-flex flex-column" style="min-height: 60vh"></div>
+        </div>
+        <div class="border-success border-bottom"></div>
+
+        <!-- funs -->
+        <div class="p-1">
+            <!-- icon -->
+            <i class="fun fs-5 pe-2 ps-2 pt-1 pb-1 bi bi-emoji-laughing-fill"></i>
+            <i class="fun fs-5 pe-2 ps-2 pt-1 pb-1 bi bi-scissors"></i>
+            <i class="fun fs-5 pe-2 ps-2 pt-1 pb-1 bi bi-image-fill"></i>
+            <i class="fun fs-5 pe-2 ps-2 pt-1 pb-1 bi bi-folder2"></i>
+
+            <!-- button -->
+            <div class="float-end">
+                <button class="btn btn-sm btn-outline-success" onclick="screenView(true)">
+                    <i class="bi bi-windows"></i>
+                    屏幕共享
+                </button>
+                <button class="btn btn-sm btn-outline-success" onclick="videoView(true)">
+                    <i class="bi bi-camera-video-fill"></i>
+                    视频聊天
+                </button>
+                <button class="btn btn-sm btn-outline-success" onclick="audioView(true)">
+                    <i class="bi bi-telephone-fill"></i>
+                    语音聊天
+                </button>
+                <button class="btn btn-sm btn-outline-success" onclick="todoView(true)">
+                    <i class="bi bi-check2-square"></i>
+                    TODO
+                </button>
+            </div>
+
+        </div>
+        <div class="border-success mb-1"></div>
+
+        <!-- edit -->
+        <textarea id="sendTextarea" class="w-100 border-0" placeholder="input..." name="message" style="height: 18vh;outline: none"></textarea>
+
+        <!-- hidden -->
+        <div class="p-1 float-end">
+            <!-- 屏幕共享 -->
+            <div id="screen" class="window shadow bg-white p-2">
+                <div class="d-flex mb-1">
+                    <div class="fw-bold text-success">屏幕共享</div>
+                    <button type="button" style="margin-left: auto;" class="btn-close align-items-end" onclick="screenView(false)" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+
+                <div class="d-flex gap-1 h-100 w-100 mb-1">
+                    <video class="bg-dark h-100 w-50" id="localVideo" autoplay playsinline></video>
+                    <video class="bg-dark h-100 w-50" id="screenVideo" autoplay playsinline></video>
+                </div>
+
+                <button class="btn btn-sm btn-outline-primary" onclick="startScreen()">打开屏幕共享</button>
+                <button class="btn btn-sm btn-outline-primary" onclick="closeScreen()">关闭屏幕共享</button>
+            </div>
+
+            <!-- 视频聊天 -->
+            <div id="video" class="window shadow bg-white p-2">
+                <div class="d-flex mb-1">
+                    <div class="fw-bold text-success">视频聊天</div>
+                    <button type="button" style="margin-left: auto;" class="btn-close" onclick="videoView(false)" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+
+                <div class="d-flex gap-1 h-100 w-100 mb-1">
+                    <div class="bg-black" style="width: 100px; height: 100px" id="videos"></div>
+                    <div class="bg-black" style="width: 100px; height: 100px" id="screenVideos"></div>
+                </div>
+
+                <button class="btn btn-sm btn-outline-success" onclick="startVideo()">打开视频</button>
+                <button class="btn btn-sm btn-outline-success" onclick="closeVideo()">关闭视频</button>
+            </div>
+
+            <!-- 语音聊天 -->
+            <div id="audio" class="window shadow bg-white p-2">
+                <div class="d-flex mb-1">
+                    <div class="fw-bold text-success">语音聊天</div>
+                    <button type="button" style="margin-left: auto;" class="btn-close" onclick="audioView(false)" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+
+                <button class="btn btn-sm btn-outline-success" onclick="startAudio()">打开语音</button>
+                <button class="btn btn-sm btn-outline-success" onclick="closeAudio()">关闭语音</button>
+            </div>
+
+            <!-- TODO -->
+            <div id="todo" class="window shadow bg-white p-2">
+                <div class="d-flex mb-1">
+                    <div class="fw-bold text-success">TODO</div>
+                    <button type="button" style="margin-left: auto;" class="btn-close" onclick="todoView(false)" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+
+                <ol class="w-100">
+                    <li>表情, 截图, 发送图片, 发送文件</li>
+                    <li>屏幕共享</li>
+                    <li>视频聊天</li>
+                    <li>语音聊天</li>
+                    <li>保存记录</li>
+                    <li>组件拖拽</li>
+                </ol>
+
+            </div>
+
+            <button class="btn btn-success">保存记录</button>
+            <button class="btn btn-success" onclick="sendMessage()">发送消息</button>
+
+            <div class="mb-1"></div>
+        </div>
+    </div>
+</div>
+
+</body>
+<script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
+<script src="https://libs.baidu.com/jquery/2.1.4/jquery.min.js"></script>
+<script src="../js/main.js"></script>
+</html>

@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>聊天室</title>
+    <link href="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/5.2.3/css/bootstrap.min.css" rel="stylesheet"
+          crossorigin="anonymous">
+    <style>
+        body {
+            padding: 0;
+            margin: 0;
+            background-color: #f1f1f1;
+        }
+    </style>
+</head>
+
+<body class="d-flex shadow justify-content-center align-items-center min-vh-100">
+<div class="border" style="width: 500px">
+    <!-- head -->
+    <div class="p-2 text-white fw-bold" style="background-color: #86cdb4; border: #86cdb4 solid 1px">
+        聊天室 <span class="opacity-75">v1.0</span>
+    </div>
+
+    <!-- body -->
+    <div class="p-2 bg-white d-flex justify-content-center align-items-center" style="min-height: 300px">
+        <form class="w-100" onsubmit="return goToChat(username.value)">
+            <div class="input-group flex-nowrap mb-2">
+                <span class="input-group-text" id="addon-wrapping">@</span>
+                <input type="text" name="username" class="form-control" placeholder="Username"
+                       aria-label="Username" aria-describedby="addon-wrapping">
+                <button onclick="checkUsername(username.value)" class="btn btn-outline-success" type="button">
+                    检测名称是否重复
+                </button>
+            </div>
+
+            <button class="btn btn-outline-success w-100 fw-bold mb-2" type="submit">登录</button>
+
+            <a class="text-success" data-bs-toggle="collapse" href="#collapseExample" role="button"
+               aria-expanded="false"
+               aria-controls="collapseExample">
+                注意事项
+            </a>
+            <div class="collapse" id="collapseExample">
+                <div class="card card-body">
+                    Some placeholder content for the collapse component. This panel is hidden by default but
+                    revealed when the user activates the relevant trigger.
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+<script src="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/5.2.3/js/bootstrap.bundle.min.js"
+        crossorigin="anonymous"></script>
+</body>
+<script>
+    function checkUsername(username) {
+        alert("暂不支持验证");
+        return false;
+    }
+
+    function goToChat(msg) {
+        if (msg === "" || msg === null) {
+            alert("昵称不能为空~");
+            return;
+        }
+        if (msg.length > 15) {
+            alert("昵称字数不能大于15~");
+            return;
+        }
+        window.location.href = "chat.html?nick=" + encodeURI(encodeURI(msg));
+        return false;
+    }
+</script>
+</html>

@@ -1,0 +1,27 @@
+body {
+    background-color: #dcdcdc;
+}
+
+#sendTextarea::placeholder {
+    padding-left: 2px;
+    color: rebeccapurple;
+}
+
+.window {
+    display: none;
+    position: fixed;
+    left:50%;
+    top:50%;
+    transform:translate(-50%,-50%);
+    z-index:1000;
+}
+
+.user img {
+    height: 50px;
+    width: 50px;
+}
+
+.fun:hover {
+    background-color: #effff0;
+    color: #72ef4d;
+}
