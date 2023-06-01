@@ -1,5 +1,7 @@
 package com.qing.server.handler;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -47,7 +49,7 @@ import lombok.val;
 public class WebSocketSimpleChannelInboundHandler extends SimpleChannelInboundHandler<Object> {
     // WebSocket 握手工厂类
     private WebSocketServerHandshakerFactory factory = new WebSocketServerHandshakerFactory(WebSocketConstant.WEB_SOCKET_URL, null, false);
-    private WebSocketServerHandshaker handshaker;
+    private WebSocketServerHandshaker handShaker;
 
     // 业务逻辑
     private final WebSocketInfoService websocketInfoService = new WebSocketInfoService();
@@ -89,11 +91,18 @@ public class WebSocketSimpleChannelInboundHandler extends SimpleChannelInboundHa
     protected void channelRead0(ChannelHandlerContext channelHandlerContext, Object o) {
         if (o instanceof FullHttpRequest) {
             // 处理客户端向服务端发起 http 请求的业务
+            // FullHttpRequest req = (FullHttpRequest) o;
+            // 如果是图片业务 req.uri().equals("/image");
+            // 如果是握手业务 req.uri().equals("/");
             handHttpRequest(channelHandlerContext, (FullHttpRequest) o);
         } else if (o instanceof WebSocketFrame) {
             // 处理客户端与服务端之间的 websocket 业务
             handWebsocketFrame(channelHandlerContext, (WebSocketFrame) o);
+        } else {
+            // 如果没有符合处理消息的模块, 则将其传递给下一个ChannelInboundHandler
+            channelHandlerContext.fireChannelRead(o);
         }
+
     }
 
     // 事件分发: 处理 websocket 业务
@@ -101,7 +110,7 @@ public class WebSocketSimpleChannelInboundHandler extends SimpleChannelInboundHa
         // 判断是否为: 关闭 websocket 的指令
         if (frame instanceof CloseWebSocketFrame) {
             // 关闭握手
-            handshaker.close(ctx.channel(), (CloseWebSocketFrame) frame.retain());
+            handShaker.close(ctx.channel(), (CloseWebSocketFrame) frame.retain());
             websocketInfoService.clearSession(ctx.channel());
             return;
         }
@@ -133,13 +142,13 @@ public class WebSocketSimpleChannelInboundHandler extends SimpleChannelInboundHa
             return;
         }
 
-        String uuid = UUID.randomUUID().toString();
-        String time = DateUtils.date2String(new Date(), "yyyy-MM-dd HH:mm:ss");
-        json.put("id", uuid);
-        json.put("sendTime", time);
+        json.put("msgId", UUID.randomUUID().toString());
+        json.put("sendTime", LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
 
-        int code = json.getIntValue("code");
+        val code = json.getIntValue("code");
         val username = json.getString("username");
+        val msg = JSONObject.toJSONString(json);
+
         switch (code) {
             // 心跳
             case MessageCodeConstant.HEART_BEAT:
@@ -150,8 +159,7 @@ public class WebSocketSimpleChannelInboundHandler extends SimpleChannelInboundHa
             case MessageCodeConstant.PRIVATE_CHAT_CODE:
                 // 接收人id
                 String receiveUserId = json.getString("receiverUserId");
-                String sendUserId = json.getString("sendUserId");
-                String msg = JSONObject.toJSONString(json);
+
                 // 点对点挨个给接收人发送消息
                 for (Map.Entry<String, Channel> entry : SessionHolder.channelMap.entrySet()) {
                     String userId = entry.getKey();
@@ -162,8 +170,8 @@ public class WebSocketSimpleChannelInboundHandler extends SimpleChannelInboundHa
                 }
 
                 // 如果发给别人，给自己也发一条
-                if (!receiveUserId.equals(sendUserId)) {
-                    SessionHolder.channelMap.get(sendUserId).writeAndFlush(new TextWebSocketFrame(msg));
+                if (!receiveUserId.equals(username)) {
+                    SessionHolder.channelMap.get(username).writeAndFlush(new TextWebSocketFrame(msg));
                 }
                 break;
             // 群聊
@@ -173,15 +181,16 @@ public class WebSocketSimpleChannelInboundHandler extends SimpleChannelInboundHa
                 break;
             // 系统消息
             case MessageCodeConstant.SYSTEM_MESSAGE_CODE:
-                //向连接上来的客户端广播消息
+                // 向连接上来的客户端广播消息
                 SessionHolder.channelGroup.writeAndFlush(new TextWebSocketFrame(JSONObject.toJSONString(json)));
                 break;
             // pong消息
             case MessageCodeConstant.PONG_CHAT_CODE:
-                Channel channel = ctx.channel();
                 // 更新心跳时间
-                NettyAttrUtil.refreshLastHeartBeatTime(channel);
+                NettyAttrUtil.refreshLastHeartBeatTime(ctx.channel());
+                break;
             default:
+                log.warn("有可能是脱离客户端发送的消息");
                 break;
         }
     }
@@ -210,10 +219,10 @@ public class WebSocketSimpleChannelInboundHandler extends SimpleChannelInboundHa
         }
 
         // 新建一个握手
-        handshaker = factory.newHandshaker(request);
+        handShaker = factory.newHandshaker(request);
 
         // 如果为空, 说明是不受支持的 websocket 版本
-        if (handshaker == null) {
+        if (handShaker == null) {
             WebSocketServerHandshakerFactory.sendUnsupportedVersionResponse(ctx.channel());
             return;
         }
@@ -236,23 +245,21 @@ public class WebSocketSimpleChannelInboundHandler extends SimpleChannelInboundHa
         NettyAttrUtil.refreshLastHeartBeatTime(channel);
 
         // ...
-        handshaker.handshake(ctx.channel(), request);
+        handShaker.handshake(ctx.channel(), request);
         SessionHolder.channelGroup.add(ctx.channel());
         SessionHolder.channelMap.put(userId, ctx.channel());
 
         // 推送用户上线消息，更新客户端在线用户列表
         Set<String> userList = SessionHolder.channelMap.keySet();
-        Map<String, Object> ext = new HashMap<String, Object>(){{
-            put("userList", userList);
-            put("user", userId);
-        }};
-        WsMessage msg = new WsMessage(){{
-            setExt(ext);
+        WsMessage msg = new WsMessage() {{
+            setExt(new HashMap<String, Object>() {{
+                put("userList", userList);
+                put("user", userId);
+            }});
             setCode(MessageCodeConstant.SYSTEM_MESSAGE_CODE);
-            setType(MessageTypeConstant.UPDATE_USERLIST_SYSTEM_MESSGAE);
+            setType(MessageTypeConstant.UPDATE_USER_LIST_SYSTEM_MESSAGE);
         }};
         SessionHolder.channelGroup.writeAndFlush(new TextWebSocketFrame(JSONObject.toJSONString(msg)));
-
     }
 
 }

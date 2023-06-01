@@ -53,8 +53,18 @@
         crossorigin="anonymous"></script>
 </body>
 <script>
+    function isValidName(name) {
+        // 定义一个正则表达式，只允许字母、空格、连字符或撇号
+        const regex = /^[a-zA-Z\s'-]+$/;
+        return regex.test(name);
+    }
     function checkUsername(username) {
-        alert("暂不支持验证");
+        if (!isValidName(username)) {
+            alert("您的名称非法, 只允许字母、空格、连字符或撇号");
+            return false;
+        }
+        // TODO: 验证名称是否重复
+        alert("您的名称可以成功使用");
         return false;
     }
 

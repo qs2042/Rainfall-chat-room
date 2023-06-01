@@ -4,6 +4,7 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.http.HttpServerCodec;
+import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
 import io.netty.handler.stream.ChunkedWriteHandler;
 import lombok.val;
 
@@ -27,14 +28,17 @@ public class WebSocketChannelInitializer extends ChannelInitializer<SocketChanne
         });*/
 
         pipeline
-                // 请求解码器
+                // 请求解码器, 将HTTP消息解码为字节
                 .addLast("http-codec", new HttpServerCodec())
 
-                // 将多个消息转换成单一的消息对象
+                // 将HTTP消息的多个部分组合成一个完整的消息
                 .addLast("aggregator", new HttpObjectAggregator(65536))
 
                 // 支持异步发送大的码流，一般用于发送文件流
                 .addLast("http-chunked", new ChunkedWriteHandler())
+
+                //
+//                .addLast("", new WebSocketServerProtocolHandler("/myHandler"))
 
                 // 处理 websocket 和处理消息的发送
                 .addLast("handler", new WebSocketSimpleChannelInboundHandler());

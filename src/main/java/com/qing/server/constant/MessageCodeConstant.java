@@ -19,4 +19,11 @@ public class MessageCodeConstant {
     public static final int VIDEO_CHAT_CODE = 7;
     // 语音聊天
     public static final int AUDIO_CHAT_CODE = 8;
+    // 文件
+    public static final int FILE_CODE = 9;
+    // 有人加入
+    public static final int USER_JOIN_CHAT_ROOM = 10;
+    // 有人退出
+    public static final int USER_LEAVE_CHAT_ROOM = 11;
+
 }
