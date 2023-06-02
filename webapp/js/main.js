@@ -300,17 +300,43 @@ function webSocketInit() {
     ws = new WebSocket(wsUrl);
 }
 
-// 回显消息, 红点提醒
+// 回显消息
 function responseShow(data, userId) {
     let nick = GetQueryString('nick')
     let receiverUserId = data.receiverUserId
 
-    let response = userId === null ? $("#responseContent") : $("#responseContent-" + userId)
+    let response;
+    let isExists = true;
 
+    // 如果是群聊
+    if (userId === null) {
+        response = $("#responseContent")
+    }
+
+    // 如果是私聊
+    if (receiverUserId !== undefined) {
+        // 如果是对方私聊我
+        if (data.username !== nick) {
+            if (!elementExistsById(`responseContent-${data.username}`)) {
+                _createPrivateChannel(data.username)
+                response = $(`#responseContent-${data.username}`)
+                response.addClass("d-none")
+            }
+
+        } else {
+            // 如果是我私聊对方
+            if (!elementExistsById(`responseContent-${data.receiverUserId}`)) {
+                _createPrivateChannel(data.receiverUserId)
+                response = $(`#responseContent-${data.receiverUserId}`)
+            }
+        }
+    }
+
+    // 处理元素
     if (data.username !== nick) {
         // 特殊情况: 如果是私聊
         if (receiverUserId !== undefined) {
-            response = $("#responseContent-" + data.username)
+            response = getElementByIdOrCreate("responseContent-" + data.username, "div")
         }
         response.append(`
         <div class="d-flex mb-sm-2">
@@ -328,7 +354,7 @@ function responseShow(data, userId) {
     } else {
         // 特殊情况: 如果是私聊
         if (receiverUserId !== undefined) {
-            response = $("#responseContent-" + data.receiverUserId)
+            response = getElementByIdOrCreate("responseContent-" + data.receiverUserId, "div")
         }
         response.append(`
         <div class="d-flex justify-content-end mb-sm-2">
@@ -346,16 +372,59 @@ function responseShow(data, userId) {
     }
 }
 
+// 红点提醒
 function updateRedPoint(data) {
     // 如果是群聊
 
     // 如果是私聊
 }
 
+// 选择用户
+let title = $("#title")
+let responseContent = $("#responseContent")
+
+function _jumpToPublicChannel() {
+    title.text("聊天室")
+    chatUserActive = ""
+
+    responseContent.removeClass("d-none");
+    userList.forEach(v => $("#responseContent-" + v).addClass("d-none"));
+}
+
+function _createPrivateChannel(userId) {
+    chatUserActive = userId
+    let e = $("#responseContent-" + userId)
+    if (e.length === 0) {
+        $("#response").append(`<div id="responseContent-${userId}" class="p-2 d-flex flex-column" style="min-height: 60vh"></div>`)
+    }
+}
+
+function chooseUser(userId) {
+    // 如果要跳转到公共频道
+    if (userId === null) {
+        _jumpToPublicChannel()
+        return;
+    } else {
+        responseContent.addClass("d-none");
+    }
+
+    // 如果聊天框未创建那就创建
+    _createPrivateChannel(userId)
+
+    // 将其他的都隐藏掉
+    userList
+        .filter(v => v !== userId)
+        .forEach(v => $("#responseContent-" + v).addClass("d-none"))
+    // 更改标题
+    title.text(`聊天室(${userId})`)
+    // 显示
+    $("#responseContent-" + userId).removeClass("d-none");
+}
+
 function webSocketLoad() {
     // 消息
     ws.onmessage = function (event) {
-        console.log(event.data);
+        console.log(`ws:message:${event.data}`);
         let data = JSON.parse(event.data);
         switch (data.code) {
             // 群聊
@@ -433,7 +502,7 @@ function webSocketLoad() {
 
     // 连接
     ws.onopen = function () {
-        let object = { "code": MESSAGE_CODE.USER_JOIN_CHAT_ROOM, "username": uid };
+        let object = {"code": MESSAGE_CODE.USER_JOIN_CHAT_ROOM, "username": uid};
         ws.send(JSON.stringify(object))
 
         // 发送图片测试
@@ -465,41 +534,11 @@ function webSocketLoad() {
 
     // 关闭
     ws.onclose = function () {
-        let object = { "code": MESSAGE_CODE.USER_LEAVE_CHAT_ROOM, "username": uid };
+        let object = {"code": MESSAGE_CODE.USER_LEAVE_CHAT_ROOM, "username": uid};
         ws.send(JSON.stringify(object))
     };
 }
 
-function chooseUser(userId) {
-    let title = $("#title")
-    let responseContent = $("#responseContent")
-
-    // 如果要跳转到公共频道
-    if (userId === null) {
-        chatUserActive = ""
-        title.text("聊天室(公共频道)")
-        responseContent.removeClass("d-none");
-        userList.forEach(v => $("#responseContent-" + v).addClass("d-none"));
-        return;
-    } else {
-        responseContent.addClass("d-none");
-    }
-
-    // 如果聊天框未创建那就创建
-    chatUserActive = userId
-    let e = $("#responseContent-" + userId)
-    if (e.length === 0) {
-        $("#response").append(`<div id="responseContent-${userId}" class="p-2 d-flex flex-column" style="min-height: 60vh"></div>`)
-    }
-    // 将其他的都隐藏掉
-    userList
-        .filter(v => v !== userId)
-        .forEach(v => $("#responseContent-" + v).addClass("d-none"))
-    // 更改标题
-    $("#title").text(`聊天室(${userId})`)
-    // 显示
-    e.removeClass("d-none");
-}
 
 // 主动发请求保持心跳(以保持ws连接)
 function heartBeat() {
@@ -521,9 +560,9 @@ function sendMessage() {
     let object;
     // 如果是群聊
     if (chatUserActive === "") {
-        object = { "code": MESSAGE_CODE.GROUP_CHAT, "username": uid, "msg": message };
+        object = {"code": MESSAGE_CODE.GROUP_CHAT, "username": uid, "msg": message};
     } else {
-        object = { "code": MESSAGE_CODE.PRIVATE_CHAT, "username": uid, "msg": message, receiverUserId: chatUserActive };
+        object = {"code": MESSAGE_CODE.PRIVATE_CHAT, "username": uid, "msg": message, receiverUserId: chatUserActive};
     }
     $('#sendTextarea').val("");
     ws.send(JSON.stringify(object));

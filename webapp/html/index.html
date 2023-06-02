@@ -59,18 +59,22 @@
         return regex.test(name);
     }
     function checkUsername(username) {
+        if (username.length === 0) {
+            alert("名称不能为空");
+            return false;
+        }
         if (!isValidName(username)) {
-            alert("您的名称非法, 只允许字母、空格、连字符或撇号");
+            alert("名称非法, 只允许字母、空格、连字符或撇号");
             return false;
         }
         // TODO: 验证名称是否重复
-        alert("您的名称可以成功使用");
+        alert("名称可以使用");
         return false;
     }
 
     function goToChat(msg) {
         if (msg === "" || msg === null) {
-            alert("昵称不能为空~");
+            alert("名称不能为空");
             return;
         }
         if (msg.length > 15) {

@@ -12,3 +12,17 @@ function GetQueryString(name) {
     }
     return null;
 }
+
+// 获取元素, 不存在则创建
+function getElementByIdOrCreate(id, tag) {
+    let element = $("#" + id);
+    if (element.length === 0) {
+        element = $("<" + tag + ">");
+        element.attr("id", id);
+    }
+    return element;
+}
+
+function elementExistsById(id) {
+    return $(`#${id}`).length > 0;
+}
